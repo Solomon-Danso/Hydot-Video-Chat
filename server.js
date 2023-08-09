@@ -4,28 +4,30 @@ const server = require('http').Server(app)
 
 const io = require("socket.io")(server)
 
-
 const {v4: uuidv4} = require('uuid')
+const {ExpressPeerServer} = require('peer')
+const peerServer = ExpressPeerServer(server, {
+    debug:true,
+})
 
 app.set('view engine', "ejs");
 app.use(express.static("public"))
+app.use('/peerjs',peerServer)
 
-//Homepage automatically redirects to a UUID eg = f04eea3c-a28c-4a14-b354-c63f40e6be74
 
 app.get('/',(req,res)=>{
     res.redirect(`/${uuidv4()}`)
 } )
 
-//The UUID eg f04eea3c-a28c-4a14-b354-c63f40e6be74 becomes a parameter stored in roomId
 app.get('/:roomid',(req,res)=>{
     res.render("room",{roomId:req.params.roomid})
 })
 
 
 io.on('connection',socket=>{
-    socket.on('join-room',(roomId)=>{
+    socket.on('join-room',(roomId,userId)=>{
         socket.join(roomId)
-        socket.to(roomId).broadcast.emit("user-joined")
+        socket.to(roomId).emit("user-connected",userId)
     })
 })
 
